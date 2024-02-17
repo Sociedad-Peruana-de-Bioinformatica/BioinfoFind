@@ -28,6 +28,13 @@ def popUpText(index):
         dmc.ListItem([dmc.Text("Ranking: ", weight=700), df['US News Ranking (2018)'][index]]),
     ])
 
+def create_table(df):
+    columns, values = df.columns, df.values
+    header = [html.Tr([html.Th(col) for col in columns])]
+    rows = [html.Tr([html.Td(cell) for cell in row]) for row in values]
+    table = [html.Thead(header), html.Tbody(rows)]
+    return table
+
 app = Dash(
     __name__, 
     external_stylesheets=[
@@ -50,15 +57,38 @@ app.layout = dmc.Container(
                 data=[{"value": countryName, "label": countryName} for countryName in countries]
             )
         ]),
-        dl.Map([
-            dl.TileLayer(),
-            dl.GeoJSON(data=geojson_data, zoomToBounds=True, id='geojson'),
-            *[dl.Marker(
-                title=df['University'][ind],
-                position={"lat": df['Latitude'][ind], "lng": df['Longitude'][ind]},
-                children=[dl.Popup(children=popUpText(ind))]
-            ) for ind in df.index],
-        ], center=[32,0], zoom=2, style={'height':'75vh'})
+        dmc.Tabs(
+            [
+                dmc.TabsList(
+                    [
+                        dmc.Tab("Map", value="map"),
+                        dmc.Tab("Table", value="table"),
+                    ], mb="10px"
+                ),
+                dmc.TabsPanel(
+                    dl.Map([
+                        dl.TileLayer(),
+                        dl.GeoJSON(data=geojson_data, zoomToBounds=True, id='geojson'),
+                        *[dl.Marker(
+                            title=df['University'][ind],
+                            position={"lat": df['Latitude'][ind], "lng": df['Longitude'][ind]},
+                            children=[dl.Popup(children=popUpText(ind))]
+                        ) for ind in df.index],
+                    ], center=[32,0], zoom=2, style={'height':'75vh'}), value="map"),
+                dmc.TabsPanel(
+                    dmc.Table(
+                        striped=True,
+                        highlightOnHover=True,
+                        withBorder=True,
+                        withColumnBorders=True,
+                        children=create_table(df)
+                    ), value="table"),
+            ],
+            keepMounted=False,
+            value="map",
+            color="blue",
+            orientation="horizontal",
+        )
     ], size="xl"
 )
 
